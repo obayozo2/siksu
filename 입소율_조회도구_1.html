@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>식수인원 산출 도구 · FY2026 입소율</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0F1B2C;
+    --surface: #17263B;
+    --surface-2: #1E2F48;
+    --border: rgba(237,234,224,0.12);
+    --border-strong: rgba(237,234,224,0.22);
+    --text: #EDEAE0;
+    --text-dim: #9CA0AC;
+    --text-mute: #6C7280;
+    --gold: #D9A94F;
+    --gold-dim: #7A6636;
+    --teal: #6FA5A0;
+    --teal-dim: #35504E;
+    --red: #CB7A63;
+    --red-dim: #5B392F;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Noto Sans KR', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:56px 32px 80px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.14em;
+    color:var(--gold);
+    text-transform:uppercase;
+    margin:0 0 10px;
+  }
+  h1{
+    font-family:'Noto Serif KR', serif;
+    font-weight:700;
+    font-size:34px;
+    margin:0 0 8px;
+    line-height:1.3;
+  }
+  .sub{
+    color:var(--text-dim);
+    font-size:14px;
+    margin:0 0 40px;
+    line-height:1.7;
+  }
+  .search-row{
+    position:relative;
+    margin-bottom:28px;
+  }
+  #q{
+    width:100%;
+    padding:16px 20px;
+    font-size:17px;
+    font-family:'Noto Sans KR', sans-serif;
+    background:var(--surface);
+    border:1px solid var(--border-strong);
+    border-radius:10px;
+    color:var(--text);
+    outline:none;
+  }
+  #q::placeholder{color:var(--text-mute);}
+  #q:focus{border-color:var(--gold-dim);}
+
+  .layout{
+    display:grid;
+    grid-template-columns:320px 1fr;
+    gap:20px;
+    align-items:start;
+  }
+  @media (max-width:760px){
+    .layout{grid-template-columns:1fr;}
+    .wrap{padding:36px 18px 60px;}
+    h1{font-size:26px;}
+  }
+
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:6px;
+  }
+  .list-empty{
+    padding:28px 18px;
+    color:var(--text-mute);
+    font-size:13px;
+    line-height:1.7;
+  }
+  .list-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:13px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:14px;
+  }
+  .list-item:hover{background:var(--surface-2);}
+  .list-item.active{background:var(--surface-2); border:1px solid var(--gold-dim);}
+  .list-item .nm{
+    line-height:1.5;
+  }
+  .list-item .sc{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--text-mute);
+    white-space:nowrap;
+    padding-left:8px;
+  }
+  .list-item.active .sc{color:var(--gold);}
+
+  .detail{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:32px;
+    min-height:420px;
+  }
+  .detail-empty{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:380px;
+    color:var(--text-mute);
+    font-size:14px;
+    text-align:center;
+    line-height:1.8;
+  }
+  .course-title{
+    font-family:'Noto Serif KR', serif;
+    font-size:20px;
+    font-weight:500;
+    margin:0 0 4px;
+    line-height:1.4;
+  }
+  .course-meta{
+    color:var(--text-mute);
+    font-size:12px;
+    font-family:'IBM Plex Mono', monospace;
+    margin:0 0 28px;
+  }
+
+  .gauge-row{
+    display:flex;
+    align-items:center;
+    gap:32px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+  }
+  .gauge-num{
+    font-family:'Noto Serif KR', serif;
+    font-weight:700;
+    font-size:56px;
+    line-height:1;
+  }
+  .gauge-cap{
+    color:var(--text-dim);
+    font-size:13px;
+    margin-top:8px;
+  }
+
+  .months{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:24px;
+  }
+  .month-chip{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:7px 12px;
+    border:1px solid var(--border-strong);
+    border-radius:20px;
+    font-size:12px;
+    font-family:'IBM Plex Mono', monospace;
+    cursor:pointer;
+    color:var(--text-mute);
+    user-select:none;
+  }
+  .month-chip input{accent-color:var(--gold); margin:0;}
+  .month-chip.on{
+    color:var(--text);
+    border-color:var(--gold-dim);
+    background:rgba(217,169,79,0.08);
+  }
+  .month-chip.nodata{opacity:0.35; cursor:not-allowed;}
+
+  .bars{
+    display:flex;
+    align-items:flex-end;
+    gap:10px;
+    height:120px;
+    padding-top:10px;
+    border-top:1px solid var(--border);
+  }
+  .bar-col{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-end;
+    height:100%;
+    gap:6px;
+  }
+  .bar{
+    width:100%;
+    max-width:34px;
+    background:var(--teal-dim);
+    border-radius:3px 3px 0 0;
+    position:relative;
+  }
+  .bar.used{background:var(--gold-dim);}
+  .bar-val{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--text-dim);
+  }
+  .bar-lbl{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--text-mute);
+  }
+
+  .note{
+    margin-top:22px;
+    padding-top:18px;
+    border-top:1px solid var(--border);
+    font-size:12px;
+    color:var(--text-mute);
+    line-height:1.8;
+  }
+  .note b{color:var(--gold); font-weight:500;}
+  footer{
+    margin-top:44px;
+    font-size:11px;
+    color:var(--text-mute);
+    line-height:1.8;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">FY2026 · 연수원 입소율 조회</p>
+  <h1>식수인원 산출 도구</h1>
+  <p class="sub">과정명을 입력하면 정확한 명칭이 아니어도 비슷한 과정을 찾아 3개월 평균 입소율을 계산합니다. 데이터는 2026년 1~6월 실적 기준입니다.</p>
+
+  <div class="search-row">
+    <input id="q" type="text" placeholder="과정명을 입력하세요 (예: SM 역량강화, 지점장, 슈퍼루키...)" autocomplete="off">
+  </div>
+
+  <div class="layout">
+    <div class="panel"><div id="list" class="list-empty">검색어를 입력하면 일치하는 과정이 여기에 표시됩니다.</div></div>
+    <div class="detail"><div id="detail" class="detail-empty">왼쪽 목록에서 과정을 선택하면<br>월별 입소율과 평균이 표시됩니다.</div></div>
+  </div>
+
+  <footer>데이터 출처: FY2026_연인원_현황.xls (S열, 입소예정 대비 입소율) · 1~6월 총 180개 과정 기록 · 7월 이후 자료는 파일을 다시 전달하면 갱신할 수 있습니다.</footer>
+</div>
+
+<script>
+const COURSE_DATA = [{"month": "1월", "name": "양성담당 역량강화과정", "rate": 0.8167, "planned": 60, "actual": 49}, {"month": "1월", "name": "26.1월 WE/WM 전문성 강화과정", "rate": 0.9149, "planned": 47, "actual": 43}, {"month": "1월", "name": "경력자 교보인 입문과정", "rate": 0.875, "planned": 32, "actual": 28}, {"month": "1월", "name": "FP소장 입문과정", "rate": 1, "planned": 14, "actual": 14}, {"month": "1월", "name": "SM 입문과정", "rate": 1, "planned": 24, "actual": 24}, {"month": "1월", "name": "법인컨설팅 전문FP과정_마감(재경권)", "rate": 1, "planned": 22, "actual": 22}, {"month": "1월", "name": "루키센터장 역량강화과정", "rate": 0.9231, "planned": 65, "actual": 60}, {"month": "1월", "name": "SM 역량강화과정 1차", "rate": 0.8374, "planned": 289, "actual": 242}, {"month": "1월", "name": "CS컨설턴트 역량강화과정", "rate": 1, "planned": 9, "actual": 9}, {"month": "1월", "name": "SM 역량강화과정 2차", "rate": 0.9213, "planned": 305, "actual": 281}, {"month": "1월", "name": "단체보험/퇴직연금 기본과정", "rate": 0.8646, "planned": 96, "actual": 83}, {"month": "1월", "name": "권역별 주재 시장확대지원담당 성과향상과정", "rate": 1, "planned": 14, "actual": 14}, {"month": "1월", "name": "FP소장 마감과정", "rate": 0.9286, "planned": 14, "actual": 13}, {"month": "1월", "name": "법인컨설팅 전문FP과정_마감(지방권)", "rate": 0.9394, "planned": 33, "actual": 31}, {"month": "1월", "name": "SM 역량강화과정 3차", "rate": 0.9253, "planned": 308, "actual": 285}, {"month": "1월", "name": "GFP 입문과정", "rate": 0.7636, "planned": 55, "actual": 42}, {"month": "1월", "name": "슈퍼루키과정", "rate": 0.9041, "planned": 73, "actual": 66}, {"month": "1월", "name": "FP소장 VisionⅠ과정", "rate": 0.9403, "planned": 134, "actual": 126}, {"month": "1월", "name": "천안FP지원단 리크루팅 세미나 1차", "rate": 0.9, "planned": 30, "actual": 27}, {"month": "1월", "name": "Vision2030 선포 및 FY2026 출발 전사경영전략회의", "rate": 0.9395, "planned": 826, "actual": 776}, {"month": "1월", "name": "천안FP지원단 리크루팅 세미나 2차", "rate": 1.0222, "planned": 45, "actual": 46}, {"month": "1월", "name": "2026.2월 채널 영업전략회의", "rate": 1, "planned": 76, "actual": 76}, {"month": "1월", "name": "천안FP지원단 리크루팅 세미나 3차", "rate": 0.825, "planned": 40, "actual": 33}, {"month": "1월", "name": "FY2026 중부 MDRT 워크숍", "rate": 0.9643, "planned": 280, "actual": 270}, {"month": "1월", "name": "천안FP지원단 리크루팅 세미나 4차", "rate": 1, "planned": 20, "actual": 20}, {"month": "2월", "name": "FP소장 입문과정", "rate": 1, "planned": 18, "actual": 18}, {"month": "2월", "name": "경력자 교보인 입문과정", "rate": 0.9231, "planned": 13, "actual": 12}, {"month": "2월", "name": "FP소장 마감과정", "rate": 1, "planned": 12, "actual": 12}, {"month": "2월", "name": "SM 입문과정", "rate": 0.9545, "planned": 22, "actual": 21}, {"month": "2월", "name": "FY2026 비긴어게인 과정 1차", "rate": 0.9286, "planned": 28, "actual": 26}, {"month": "2월", "name": "FP소장 VisionⅡ과정", "rate": 0.9542, "planned": 131, "actual": 125}, {"month": "2월", "name": "단체보험/퇴직연금 심화과정", "rate": 0.9032, "planned": 31, "actual": 28}, {"month": "2월", "name": "GFP B2B 마스터과정Ⅰ", "rate": 0.8431, "planned": 51, "actual": 43}, {"month": "2월", "name": "13차월 FP Dream-up 과정", "rate": 0.7959, "planned": 294, "actual": 234}, {"month": "2월", "name": "특별SM후보 전환과정", "rate": 0.6765, "planned": 34, "actual": 23}, {"month": "2월", "name": "GFP 입문과정", "rate": 0.7966, "planned": 59, "actual": 47}, {"month": "2월", "name": "FP소장 VisionⅠ과정", "rate": 0.9492, "planned": 59, "actual": 56}, {"month": "2월", "name": "MDRT 학습회 리더 퍼실리테이션과정", "rate": 0.9804, "planned": 51, "actual": 50}, {"month": "2월", "name": "슈퍼루키과정", "rate": 0.7571, "planned": 70, "actual": 53}, {"month": "2월", "name": "고객PLAZA VM후보 중간과정 Ⅲ", "rate": 1, "planned": 7, "actual": 7}, {"month": "2월", "name": "GFP 양성담당 역량강화과정", "rate": 1, "planned": 8, "actual": 8}, {"month": "2월", "name": "한국보험학회 동계학술대회", "rate": 1.0612, "planned": 196, "actual": 208}, {"month": "2월", "name": "천안FP지원단 리크루팅 세미나 1차", "rate": 0.9, "planned": 70, "actual": 63}, {"month": "2월", "name": "천안FP지원단 리크루팅 세미나 2차", "rate": 0.95, "planned": 40, "actual": 38}, {"month": "2월", "name": "중부권역 FP Job의 가치와 보험사명과정", "rate": 0.6286, "planned": 140, "actual": 88}, {"month": "2월", "name": "[임대] 2026 한덕산업 임직원세미나", "rate": 0.975, "planned": 80, "actual": 78}, {"month": "3월", "name": "FY2026 조직원 몰입 성장 지원프로그램 전수교육", "rate": 1, "planned": 10, "actual": 10}, {"month": "3월", "name": "FP소장 입문과정", "rate": 0.9545, "planned": 22, "actual": 21}, {"month": "3월", "name": "SM 입문과정", "rate": 0.9524, "planned": 21, "actual": 20}, {"month": "3월", "name": "경력자 교보인 입문과정", "rate": 0.8095, "planned": 21, "actual": 17}, {"month": "3월", "name": "2026.3월 입사 신입사원 입문과정(1주차)", "rate": 0.9922, "planned": 128, "actual": 127}, {"month": "3월", "name": "2026.3월 초임FP지점장 Skill-up 과정", "rate": 1, "planned": 7, "actual": 7}, {"month": "3월", "name": "FP소장 마감과정", "rate": 0.9286, "planned": 14, "actual": 13}, {"month": "3월", "name": "종합자산관리 마스터과정_입문(재경권)", "rate": 0.9024, "planned": 41, "actual": 37}, {"month": "3월", "name": "CS컨설턴트 역량강화과정", "rate": 1, "planned": 9, "actual": 9}, {"month": "3월", "name": "GFP B2B 마스터과정Ⅱ", "rate": 0.8621, "planned": 29, "actual": 25}, {"month": "3월", "name": "FP소장 VisionⅡ과정", "rate": 0.931, "planned": 58, "actual": 54}, {"month": "3월", "name": "2026.3월 입사 신입사원 입문과정(2주차)", "rate": 1, "planned": 126, "actual": 126}, {"month": "3월", "name": "지점장 역량강화과정 1차", "rate": 0.9355, "planned": 217, "actual": 203}, {"month": "3월", "name": "슈퍼루키과정", "rate": 0.8919, "planned": 37, "actual": 33}, {"month": "3월", "name": "지점장 역량강화과정 2차", "rate": 0.9479, "planned": 211, "actual": 200}, {"month": "3월", "name": "FP소장 VisionⅢ과정", "rate": 0.9531, "planned": 128, "actual": 122}, {"month": "3월", "name": "퇴직연금 전문역량강화과정", "rate": 0.8444, "planned": 45, "actual": 38}, {"month": "3월", "name": "종합자산관리 마스터과정_입문(지방권)", "rate": 0.9231, "planned": 52, "actual": 48}, {"month": "3월", "name": "GFP 입문과정", "rate": 0.8636, "planned": 22, "actual": 19}, {"month": "3월", "name": "FP소장 VisionⅠ과정", "rate": 0.9074, "planned": 54, "actual": 49}, {"month": "3월", "name": "GFP CM 역량강화과정", "rate": 0.9167, "planned": 12, "actual": 11}, {"month": "3월", "name": "FY2026 1분기 승진 필수 교육과정(M직급)", "rate": 0.9286, "planned": 14, "actual": 13}, {"month": "3월", "name": "FY2026 1분기 승진 필수 교육과정(SA직급)", "rate": 0.9167, "planned": 24, "actual": 22}, {"month": "3월", "name": "FY2026 1분기 승진 필수 교육과정(A직급)", "rate": 0.7037, "planned": 27, "actual": 19}, {"month": "3월", "name": "권역별 주재 시장확대지원담당 성과향상과정", "rate": 1, "planned": 14, "actual": 14}, {"month": "3월", "name": "FY2026 전사 공통직무지식 콘텐츠 제작 전수교육", "rate": 1, "planned": 14, "actual": 14}, {"month": "3월", "name": "강북권역 주관 MDRT 발대식", "rate": 0.881, "planned": 420, "actual": 370}, {"month": "3월", "name": "천안FP지원단 리크루팅 세미나 1차", "rate": 1.05, "planned": 40, "actual": 42}, {"month": "3월", "name": "중부권역 매니저계층 커뮤니케이션", "rate": 0.9842, "planned": 190, "actual": 187}, {"month": "3월", "name": "FY2026 '보장의 밸런스' 시즌3 출발 커뮤니케이션", "rate": 0.9517, "planned": 145, "actual": 138}, {"month": "3월", "name": "천안FP지원단 리크루팅 세미나 2차", "rate": 0.775, "planned": 40, "actual": 31}, {"month": "3월", "name": "중부권역 FP Job의 가치와 보험사명과정", "rate": 1.0545, "planned": 55, "actual": 58}, {"month": "4월", "name": "FY2026 상반기 신임 WM 양성과정(1주차)", "rate": 1, "planned": 11, "actual": 11}, {"month": "4월", "name": "2026.4월 WE/WM 전문성 강화과정", "rate": 1, "planned": 46, "actual": 46}, {"month": "4월", "name": "경력자 교보인 입문과정", "rate": 0.6667, "planned": 9, "actual": 6}, {"month": "4월", "name": "FY2026 상반기 신임 WM 양성과정(2주차)", "rate": 1, "planned": 11, "actual": 11}, {"month": "4월", "name": "FP소장 입문과정", "rate": 1, "planned": 12, "actual": 12}, {"month": "4월", "name": "SM 입문과정", "rate": 0.9524, "planned": 21, "actual": 20}, {"month": "4월", "name": "종합자산관리 마스터과정_마감(재경권)", "rate": 0.8182, "planned": 44, "actual": 36}, {"month": "4월", "name": "퇴직연금 전문역량강화과정", "rate": 0.8182, "planned": 44, "actual": 36}, {"month": "4월", "name": "루키센터장 역량강화과정", "rate": 0.8971, "planned": 68, "actual": 61}, {"month": "4월", "name": "FP소장 VisionⅡ과정", "rate": 0.9574, "planned": 47, "actual": 45}, {"month": "4월", "name": "FY2026 상반기 신임 WM 양성과정(3주차)", "rate": 1, "planned": 11, "actual": 11}, {"month": "4월", "name": "FP소장 마감과정", "rate": 0.8421, "planned": 19, "actual": 16}, {"month": "4월", "name": "고객PLAZA PM 역량강화과정", "rate": 0.963, "planned": 27, "actual": 26}, {"month": "4월", "name": "13차월 FP Dream-up 과정", "rate": 0.8268, "planned": 179, "actual": 148}, {"month": "4월", "name": "CEO 플랜 기초과정", "rate": 0.9394, "planned": 33, "actual": 31}, {"month": "4월", "name": "종합자산관리 마스터과정_마감(지방권)", "rate": 0.9787, "planned": 47, "actual": 46}, {"month": "4월", "name": "FY2026 비긴어게인 과정 2차", "rate": 0.8846, "planned": 26, "actual": 23}, {"month": "4월", "name": "단체보험/퇴직연금 기본과정", "rate": 0.72, "planned": 50, "actual": 36}, {"month": "4월", "name": "슈퍼루키과정", "rate": 0.8435, "planned": 115, "actual": 97}, {"month": "4월", "name": "FP소장 VisionⅢ과정", "rate": 0.8571, "planned": 56, "actual": 48}, {"month": "4월", "name": "고객PLAZA 마스터텔러 역량강화과정", "rate": 1, "planned": 27, "actual": 27}, {"month": "4월", "name": "FY2026 상반기 신임 WM 양성과정(4주차)", "rate": 1, "planned": 11, "actual": 11}, {"month": "4월", "name": "FY2026 상반기 지원(사업)단장후보 육성과정(입문)", "rate": 1, "planned": 14, "actual": 14}, {"month": "4월", "name": "지원담당 역량강화과정 1차", "rate": 0.9712, "planned": 243, "actual": 236}, {"month": "4월", "name": "지원담당 역량강화과정 2차", "rate": 0.9585, "planned": 265, "actual": 254}, {"month": "4월", "name": "GFP 입문과정", "rate": 0.75, "planned": 16, "actual": 12}, {"month": "4월", "name": "FY2026 상반기 신임 WM 양성과정(5주차)", "rate": 1, "planned": 11, "actual": 11}, {"month": "4월", "name": "권역별 주재 시장확대지원담당 성과향상과정", "rate": 1, "planned": 14, "actual": 14}, {"month": "4월", "name": "2026.4월 계성원 The Dream 강좌", "rate": 0.8753, "planned": 465, "actual": 407}, {"month": "4월", "name": "중부권역 매니저후보 입문과정", "rate": 0.94, "planned": 50, "actual": 47}, {"month": "4월", "name": "FY2026 평생든든 옴부즈만 1차 워크숍", "rate": 0.9444, "planned": 18, "actual": 17}, {"month": "4월", "name": "천안FP지원단 리크루팅 세미나 1차", "rate": 0.5667, "planned": 90, "actual": 51}, {"month": "4월", "name": "FY2026 상반기 전국 융자센터장 회의", "rate": 1, "planned": 26, "actual": 26}, {"month": "4월", "name": "26.1분기「강남표준클럽」 (&표준balance FP) 워크숍", "rate": 0.9859, "planned": 284, "actual": 280}, {"month": "4월", "name": "천안FP지원단 리크루팅 세미나 2차", "rate": 1, "planned": 40, "actual": 40}, {"month": "4월", "name": "중부권역 FP소장 비전업 과정", "rate": 0.9655, "planned": 29, "actual": 28}, {"month": "4월", "name": "천안FP지원단 2536 Class", "rate": 0.9583, "planned": 24, "actual": 23}, {"month": "4월", "name": "중부권역 Pre프라임리더스클럽 역량강화과정", "rate": 0.9167, "planned": 60, "actual": 55}, {"month": "4월", "name": "천안FP지원단 리크루팅 세미나 3차", "rate": 1, "planned": 30, "actual": 30}, {"month": "4월", "name": "중부권역 FP Job의 가치와 보험사명과정", "rate": 1, "planned": 70, "actual": 70}, {"month": "4월", "name": "[임대] KCA손해사정 서면심사 신입사원 입문과정", "rate": 1, "planned": 28, "actual": 28}, {"month": "5월", "name": "FP소장 입문과정", "rate": 1, "planned": 22, "actual": 22}, {"month": "5월", "name": "SM 입문과정", "rate": 1, "planned": 24, "actual": 24}, {"month": "5월", "name": "GFP B2B 마스터과정Ⅰ", "rate": 0.9245, "planned": 53, "actual": 49}, {"month": "5월", "name": "경력자 교보인 입문과정", "rate": 1, "planned": 9, "actual": 9}, {"month": "5월", "name": "FY2026 상반기 신임 WM 양성과정(6주차)", "rate": 1, "planned": 11, "actual": 11}, {"month": "5월", "name": "FY2026 상반기 신임 WM 양성과정(7주차)", "rate": 1, "planned": 11, "actual": 11}, {"month": "5월", "name": "2026.5월 경력사원 입문과정", "rate": 1, "planned": 18, "actual": 18}, {"month": "5월", "name": "FP소장 마감과정", "rate": 0.8333, "planned": 24, "actual": 20}, {"month": "5월", "name": "단체보험/퇴직연금 심화과정", "rate": 0.825, "planned": 80, "actual": 66}, {"month": "5월", "name": "고객PLAZA 텔러 역량강화과정 1차", "rate": 0.9474, "planned": 19, "actual": 18}, {"month": "5월", "name": "FY2026 상반기 지원(사업)단장후보 육성과정(중간)", "rate": 1, "planned": 14, "actual": 14}, {"month": "5월", "name": "GFP 입문과정", "rate": 0.4211, "planned": 19, "actual": 8}, {"month": "5월", "name": "GFP 법인컨설팅 전문가과정", "rate": 0.9375, "planned": 16, "actual": 15}, {"month": "5월", "name": "슈퍼루키과정", "rate": 0.8701, "planned": 77, "actual": 67}, {"month": "5월", "name": "FP소장 VisionⅢ과정", "rate": 0.9592, "planned": 49, "actual": 47}, {"month": "5월", "name": "FP전문강사 역량강화과정", "rate": 0.8348, "planned": 115, "actual": 96}, {"month": "5월", "name": "고객PLAZA 텔러 역량강화과정 2차", "rate": 1, "planned": 17, "actual": 17}, {"month": "5월", "name": "2026 교보 MDRT DAY (FP)", "rate": 0.8264, "planned": 870, "actual": 719}, {"month": "5월", "name": "2026 교보 MDRT DAY (영업관리자)", "rate": 0.8947, "planned": 437, "actual": 391}, {"month": "5월", "name": "SA직급 승진 필기시험", "rate": 0.9762, "planned": 42, "actual": 41}, {"month": "5월", "name": "천안FP지원단 리크루팅 세미나 1차", "rate": 0.525, "planned": 40, "actual": 21}, {"month": "5월", "name": "천안FP지원단 리크루팅 세미나 2차", "rate": 0.8667, "planned": 60, "actual": 52}, {"month": "5월", "name": "중부권역 FP Job의 가치와 보험사명과정", "rate": 0.9531, "planned": 64, "actual": 61}, {"month": "5월", "name": "천안FP지원단 리크루팅 세미나 3차", "rate": 0.84, "planned": 25, "actual": 21}, {"month": "6월", "name": "경력자 교보인 입문과정", "rate": 1, "planned": 8, "actual": 8}, {"month": "6월", "name": "FY2026 상반기 신임 WM 양성과정(8주차)", "rate": 1, "planned": 11, "actual": 11}, {"month": "6월", "name": "초임FP지점장 Skill-up과정", "rate": 1, "planned": 10, "actual": 10}, {"month": "6월", "name": "법인컨설팅 전문FP과정_입문(재경권)", "rate": 0.9024, "planned": 41, "actual": 37}, {"month": "6월", "name": "교보 크리에이터 파트너스 데이", "rate": 0.8571, "planned": 35, "actual": 30}, {"month": "6월", "name": "FY2026 비긴어게인 과정 3차", "rate": 0.9688, "planned": 32, "actual": 31}, {"month": "6월", "name": "FP소장 역량강화과정 1차", "rate": 0.9552, "planned": 268, "actual": 256}, {"month": "6월", "name": "FP소장 입문과정", "rate": 1, "planned": 16, "actual": 16}, {"month": "6월", "name": "SM 입문과정", "rate": 0.9167, "planned": 12, "actual": 11}, {"month": "6월", "name": "신인매니저 역량강화과정(지방권)", "rate": 0.9341, "planned": 167, "actual": 156}, {"month": "6월", "name": "GFP B2B 마스터과정Ⅱ", "rate": 0.8519, "planned": 27, "actual": 23}, {"month": "6월", "name": "GFP 보장분석 컨설팅 역량강화과정", "rate": 0.9167, "planned": 36, "actual": 33}, {"month": "6월", "name": "고객PLAZA 텔러 역량강화과정 3차", "rate": 0.9444, "planned": 18, "actual": 17}, {"month": "6월", "name": "FY2026 마인드풀니스 프로그램", "rate": 0.931, "planned": 29, "actual": 27}, {"month": "6월", "name": "법인컨설팅 전문FP과정_입문(지방권)", "rate": 0.9636, "planned": 55, "actual": 53}, {"month": "6월", "name": "FP소장 역량강화과정 2차", "rate": 0.8588, "planned": 262, "actual": 225}, {"month": "6월", "name": "FY2026 상반기 지원(사업)단장후보 육성과정(마감)", "rate": 1, "planned": 14, "actual": 14}, {"month": "6월", "name": "FP소장 마감과정", "rate": 1, "planned": 15, "actual": 15}, {"month": "6월", "name": "고객PLAZA 텔러 역량강화과정 4차", "rate": 1, "planned": 22, "actual": 22}, {"month": "6월", "name": "FY2026 2분기 승진 필수 교육과정(A직급)", "rate": 0.9231, "planned": 13, "actual": 12}, {"month": "6월", "name": "퇴직연금 전문역량강화과정", "rate": 0.8158, "planned": 38, "actual": 31}, {"month": "6월", "name": "슈퍼루키과정", "rate": 0.8354, "planned": 79, "actual": 66}, {"month": "6월", "name": "방카슈랑스 연금아카데미", "rate": 0.9623, "planned": 53, "actual": 51}, {"month": "6월", "name": "GFP 입문과정", "rate": 0.8333, "planned": 12, "actual": 10}, {"month": "6월", "name": "2026.3월 입사 신입사원 수료과정", "rate": 0.992, "planned": 125, "actual": 124}, {"month": "6월", "name": "FY2026 2분기 승진 필수 교육과정(M직급)", "rate": 0.8, "planned": 15, "actual": 12}, {"month": "6월", "name": "FY2026 2분기 승진 필수 교육과정(SA직급)", "rate": 0.8889, "planned": 9, "actual": 8}, {"month": "6월", "name": "권역별 주재 시장확대지원담당 성과향상과정", "rate": 0.9286, "planned": 14, "actual": 13}, {"month": "6월", "name": "CS컨설턴트 역량강화 학습회", "rate": 1, "planned": 9, "actual": 9}, {"month": "6월", "name": "천안FP지원단 리크루팅 세미나 1차", "rate": 0.9333, "planned": 45, "actual": 42}, {"month": "6월", "name": "중부권역 Pre프라임리더스클럽 역량강화과정", "rate": 0.931, "planned": 58, "actual": 54}, {"month": "6월", "name": "천안FP지원단 리크루팅 세미나 2차", "rate": 0.72, "planned": 25, "actual": 18}, {"month": "6월", "name": "FY2026 평생든든 옴부즈만 2차 워크숍", "rate": 0.9412, "planned": 17, "actual": 16}, {"month": "6월", "name": "중부권역 매니저 커뮤니케이션", "rate": 0.9767, "planned": 215, "actual": 210}, {"month": "6월", "name": "천안FP지원단 리크루팅 세미나 3차", "rate": 0.84, "planned": 25, "actual": 21}, {"month": "6월", "name": "중부권역 FP Job의 가치와 보험사명과정", "rate": 0.9333, "planned": 60, "actual": 56}, {"month": "6월", "name": "[임대] KCA손해사정 승진자 양성과정", "rate": 0.9474, "planned": 19, "actual": 18}];
+
+const MONTHS = ['1월','2월','3월','4월','5월','6월'];
+
+function normalize(s){
+  return s.replace(/\s+/g,'').replace(/[_\-\.\/()]/g,'').toLowerCase();
+}
+
+function levRatio(a,b){
+  const la=a.length, lb=b.length;
+  if(la===0 || lb===0) return 0;
+  const dp = new Array(la+1);
+  for(let i=0;i<=la;i++) dp[i]=new Array(lb+1).fill(0);
+  for(let i=0;i<=la;i++) dp[i][0]=i;
+  for(let j=0;j<=lb;j++) dp[0][j]=j;
+  for(let i=1;i<=la;i++){
+    for(let j=1;j<=lb;j++){
+      dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1+Math.min(dp[i-1][j-1],dp[i-1][j],dp[i][j-1]);
+    }
+  }
+  return 1 - dp[la][lb]/Math.max(la,lb);
+}
+
+function bestWindowScore(query,name){
+  if(name.length <= query.length) return levRatio(query,name);
+  let best = 0;
+  const step = Math.max(1, Math.floor(query.length/3));
+  for(let start=0; start<=name.length-1; start+=step){
+    for(const len of [query.length, query.length+2, Math.max(2,query.length-2)]){
+      const window = name.slice(start, start+len);
+      if(window.length===0) continue;
+      const r = levRatio(query, window);
+      if(r>best) best=r;
+    }
+  }
+  return best;
+}
+
+function scoreMatch(query, name){
+  const nq = normalize(query), nn = normalize(name);
+  if(nq.length===0) return 0;
+  if(nn.includes(nq)) return 1.0;
+  return bestWindowScore(nq, nn);
+}
+
+function getUniqueCourses(){
+  const map = new Map();
+  for(const row of COURSE_DATA){
+    if(!map.has(row.name)) map.set(row.name, []);
+    map.get(row.name).push(row);
+  }
+  return map;
+}
+const COURSES = getUniqueCourses();
+
+const listEl = document.getElementById('list');
+const detailEl = document.getElementById('detail');
+const qEl = document.getElementById('q');
+
+let currentSelection = null;
+let checkedMonths = new Set();
+
+function defaultMonthsFor(rows){
+  const byMonth = {};
+  rows.forEach(r=>{ byMonth[r.month]=r; });
+  const present = MONTHS.filter(m=>byMonth[m]);
+  return present.slice(-3);
+}
+
+function renderList(query){
+  if(!query || query.trim().length===0){
+    listEl.className='list-empty';
+    listEl.innerHTML='검색어를 입력하면 일치하는 과정이 여기에 표시됩니다.';
+    return;
+  }
+  const results = [];
+  for(const [name, rows] of COURSES.entries()){
+    const s = scoreMatch(query, name);
+    if(s >= 0.45) results.push({name, score:s, rows});
+  }
+  results.sort((a,b)=>b.score-a.score);
+  const top = results.slice(0,25);
+  if(top.length===0){
+    listEl.className='list-empty';
+    listEl.innerHTML='일치하는 과정을 찾지 못했습니다. 다른 키워드로 시도해보세요.';
+    return;
+  }
+  listEl.className='';
+  listEl.innerHTML = top.map(r=>{
+    const active = currentSelection===r.name ? 'active' : '';
+    const pct = Math.round(r.score*100);
+    return `<div class="list-item ${active}" data-name="${escAttr(r.name)}">
+      <span class="nm">${escHtml(r.name)}</span>
+      <span class="sc">${pct}%</span>
+    </div>`;
+  }).join('');
+  listEl.querySelectorAll('.list-item').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      currentSelection = el.getAttribute('data-name');
+      const rows = COURSES.get(currentSelection) || [];
+      checkedMonths = new Set(defaultMonthsFor(rows));
+      renderList(qEl.value);
+      renderDetail();
+    });
+  });
+}
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escAttr(s){
+  return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+}
+
+function renderDetail(){
+  if(!currentSelection){
+    detailEl.className='detail-empty';
+    detailEl.innerHTML='왼쪽 목록에서 과정을 선택하면<br>월별 입소율과 평균이 표시됩니다.';
+    return;
+  }
+  const rows = COURSES.get(currentSelection) || [];
+  const byMonth = {};
+  rows.forEach(r=>{ byMonth[r.month]=r; });
+
+  const used = MONTHS.filter(m=>checkedMonths.has(m) && byMonth[m]);
+  const avg = used.length ? used.reduce((sum,m)=>sum+byMonth[m].rate,0)/used.length : null;
+
+  const chips = MONTHS.map(m=>{
+    const has = !!byMonth[m];
+    const on = checkedMonths.has(m) && has;
+    const cls = ['month-chip'];
+    if(on) cls.push('on');
+    if(!has) cls.push('nodata');
+    return `<label class="${cls.join(' ')}" data-month="${m}">
+      <input type="checkbox" ${on?'checked':''} ${has?'':'disabled'}>
+      ${m}${has?'':' (자료없음)'}
+    </label>`;
+  }).join('');
+
+  const maxRate = Math.max(1, ...rows.map(r=>r.rate));
+  const bars = MONTHS.map(m=>{
+    const r = byMonth[m];
+    if(!r) return `<div class="bar-col"><div class="bar" style="height:2px;background:var(--border)"></div><span class="bar-val">-</span><span class="bar-lbl">${m}</span></div>`;
+    const h = Math.max(4, Math.round((r.rate/maxRate)*96));
+    const isUsed = checkedMonths.has(m);
+    return `<div class="bar-col">
+      <span class="bar-val">${Math.round(r.rate*100)}%</span>
+      <div class="bar ${isUsed?'used':''}" style="height:${h}px"></div>
+      <span class="bar-lbl">${m}</span>
+    </div>`;
+  }).join('');
+
+  const gaugeColor = avg===null ? 'var(--text-mute)' : (avg>=0.9?'var(--gold)':(avg>=0.75?'var(--teal)':'var(--red)'));
+
+  const isShort = used.length>0 && used.length<3;
+  const gaugeLabel = used.length===0 ? '자료 없음'
+    : used.length===3 ? `직전 3개월(${used.join(', ')}) 평균 입소율`
+    : `직전 ${used.length}개월(${used.join(', ')}) 평균 입소율*`;
+  const gaugeDisplay = avg===null ? '-' : Math.round(avg*100)+'%'+(isShort?'*':'');
+
+  detailEl.className='';
+  detailEl.innerHTML = `
+    <h2 class="course-title">${escHtml(currentSelection)}</h2>
+    <p class="course-meta">전체 실시 기록 ${rows.length}개월 중 ${used.length}개월 반영</p>
+    <div class="gauge-row">
+      <div>
+        <div class="gauge-num" style="color:${gaugeColor}">${gaugeDisplay}</div>
+        <div class="gauge-cap">${gaugeLabel}</div>
+      </div>
+    </div>
+    <div class="months">${chips}</div>
+    <div class="bars">${bars}</div>
+    <div class="note">
+      기본값은 <b>이 과정이 실제로 실시된 달 중 가장 최근 3개월</b>입니다. 3개월 실적이 없으면 2개월, 2개월도 없으면 1개월치로 자동 축소되며 이때 <b>* 표시</b>로 알려드립니다(달력상 4·5·6월이 아니라, 그 과정이 실제로 열린 달 기준입니다).
+      체크박스를 눌러 반영할 월을 직접 조정할 수도 있습니다.
+      일치도가 낮은 과정이 섞여 있을 수 있으니, 반드시 목록에서 정확한 과정명인지 확인하세요.
+    </div>
+  `;
+
+  detailEl.querySelectorAll('.month-chip').forEach(el=>{
+    const m = el.getAttribute('data-month');
+    if(!byMonth[m]) return;
+    el.addEventListener('click', (e)=>{
+      e.preventDefault();
+      if(checkedMonths.has(m)) checkedMonths.delete(m); else checkedMonths.add(m);
+      renderDetail();
+    });
+  });
+}
+
+qEl.addEventListener('input', ()=>{
+  currentSelection = null;
+  renderList(qEl.value);
+  renderDetail();
+});
+</script>
+</body>
+</html>
